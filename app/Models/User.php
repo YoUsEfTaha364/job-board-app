@@ -4,14 +4,20 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable,HasUuids,SoftDeletes;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +28,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -43,7 +50,15 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'delated_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+     public function company(){
+        return $this->hasOne(User::class);
+    }
+     public function jobApplications(){
+        return $this->hasMany(JobApplication::class);
     }
 }
