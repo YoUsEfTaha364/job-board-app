@@ -16,7 +16,7 @@ class Company extends Model
         'address',
         'website',
         'industry',
-        'ownerId',
+        'owner_id',
     ];
 
     protected $keyType = 'string';

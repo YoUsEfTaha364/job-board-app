@@ -14,11 +14,11 @@ class JobApplication extends Model
 
    protected $fillable = [
         'status',
-        'aiGeneratedScore',
-        'aiGeneratedFeedback',
-        'jobVacancyId',
-        'resumeId',
-        'userId',
+        'ai_generated_score',
+        'ai_generated_feedback',
+        'job_vacancy_id',
+        'resume_id',
+        'user_id',
         
     ];
 

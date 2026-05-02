@@ -13,14 +13,14 @@ class Resume extends Model
    protected $table="resumes";
 
    protected $fillable = [
-        'fileName',
-        'fileUrl',
-        'contractDetails',
+        'file_name',
+        'file_url',
+        'contract_details',
         'skills',
         'summary',
         'experience',
         'education',
-        'userId',
+        'user_id',
         
     ];
 

@@ -21,8 +21,8 @@ class JobVacancy extends Model
         'location',
         'salary',
         'type',
-        'companyId',
-        'categoryId',
+        'company_id',
+        'category_id',
     ];
 
     protected $keyType = 'string';
