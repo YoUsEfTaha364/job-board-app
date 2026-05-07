@@ -16,6 +16,7 @@ class JobCategory extends Model
    protected $fillable = [
         'name'
     ];
+    
 
     protected $keyType = 'string';
     public $incrementing = false;
