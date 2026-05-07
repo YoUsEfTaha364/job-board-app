@@ -15,6 +15,7 @@ class CompanySeeder extends Seeder
         if ($owners->count() > 0) {
             Company::create([
                 'address' => '123 Tech Lane',
+                "name"=>fake()->name,
                 'website' => 'https://techcorp.example.com',
                 'industry' => 'IT Services',
                 'owner_id' => $owners[0]->id,
@@ -24,6 +25,7 @@ class CompanySeeder extends Seeder
         if ($owners->count() > 1) {
             Company::create([
                 'address' => '456 Business Blvd',
+                "name"=>fake()->name,
                 'website' => 'https://businessinc.example.com',
                 'industry' => 'Finance',
                 'owner_id' => $owners[1]->id,

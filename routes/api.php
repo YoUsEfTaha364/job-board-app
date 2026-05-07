@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CompanyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +27,6 @@ use Illuminate\Support\Facades\Route;
      // get archived categories
      Route::get("categories/archived","getArchived");
 
-
      Route::post("categories/store","store");
     
      Route::get("categories/{jobcategory}","show");
@@ -37,8 +37,25 @@ use Illuminate\Support\Facades\Route;
 
      Route::delete("categories/{jobcategory}","archive");
 
+     
+  });
+  Route::middleware(["auth:api","admin"])->controller(CompanyController::class)->group(function(){
+  
+    // get all companies without archived
+     Route::get("companies","index");
+     // get archived categories
+     Route::get("companies/archived","getArchived"); //done
+     Route::get("companies/{company}","show"); //done
+
+     Route::post("companies/store","store");
+     Route::put("companies/{company}","update");
+
+     Route::delete("companies/{company}","archive");
+
+     Route::put("companies/{company}/restore","restore")->withTrashed();
 
      
+
 
 
      
