@@ -31,7 +31,7 @@ class JobVacancy extends Model
       protected function casts(): array
     {
         return [
-            'delated_at' => 'datetime'
+            'deleted_at' => 'datetime'
         ];
     }
 
@@ -43,7 +43,7 @@ class JobVacancy extends Model
         return $this->belongsTo(Company::class);
     }
      public function jobCategory(){
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(JobCategory::class, 'category_id');
     }
 
 }

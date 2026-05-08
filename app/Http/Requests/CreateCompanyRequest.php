@@ -20,9 +20,9 @@ class CreateCompanyRequest extends FormRequest
         return true;
     }
 
-     protected function failedValidation(Validator $validator)
+    protected function failedValidation(Validator $validator)
     {
-        throw new HttpResponseException(ApiResponseService::Response(404,"attributes error",$validator->errors()));
+        throw new HttpResponseException(ApiResponseService::Response(404, "attributes error", $validator->errors()));
 
     }
 
@@ -38,15 +38,16 @@ class CreateCompanyRequest extends FormRequest
             'address' => 'required|string|max:255',
             'website' => 'nullable|string|url|max:255',
             'industry' => 'required|string|max:255',
-            'owner_id' => ['required', Rule::exists('users', 'id'), Rule::unique('companies', 'owner_id')],
+            'owner_id' => ['required', Rule::exists("users", "id"), Rule::unique("companies", "owner_id")],
         ];
     }
 
-    public function messages() {
+    public function messages()
+    {
 
-       return [
-        "owner_id.unique"=>"user already has company"
-       ];
-        
+        return [
+            "owner_id.unique" => "user already has company"
+        ];
+
     }
 }

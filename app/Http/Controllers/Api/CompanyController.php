@@ -25,7 +25,8 @@ class CompanyController extends Controller
 
     public function index()
     {
-        $companies = $this->companyService->getAllCompanies(1);
+       
+        $companies = $this->companyService->getAllCompanies(10);
         
         if ($companies->isEmpty()) {
             return ApiResponseService::Response(200, "no companies found", []);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\JobVacancyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,20 @@ use Illuminate\Support\Facades\Route;
 
 
 
+     
+     
+  });
+
+  Route::middleware(["auth:api","admin"])->controller(JobVacancyController::class)->group(function(){
+  
+     Route::get("job-vacancies","index");//done
+     Route::get("job-vacancies/archived","getArchivedJobs");//done
+     Route::get("job-vacancies/{jobVacancy}","show");//done
+     Route::post("job-vacancies/store","store");//done
+     Route::put("job-vacancies/{jobVacancy}","update");//done
+     Route::delete("job-vacancies/{jobVacancy}","destroy");
+     Route::put("job-vacancies/{jobVacancy}/archive","archive");//done
+     Route::put("job-vacancies/{jobVacancy}/restore","restore")->withTrashed();//done
      
   });
 
