@@ -19,11 +19,11 @@ class JobApplicationResource extends JsonResource
             'status' => $this->status,
             'ai_generated_score' => $this->ai_generated_score,
             'ai_generated_feedback' => $this->ai_generated_feedback,
-            'job_vacancy_id' => $this->job_vacancy_id,
-            'resume_id' => $this->resume_id,
+            
             'user_id' => $this->user_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'job_vacancy' =>new JobVacancyResource($this->whenLoaded("jobVacancy")) 
         ];
     }
 }

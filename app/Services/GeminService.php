@@ -19,6 +19,7 @@ class GeminService
     protected function Request(string $data)
     {
         
+        
         $response = Http::withHeaders([
             'x-goog-api-key' => $this->gemini_key,
             'Content-Type'=> 'application/json'
@@ -34,11 +35,12 @@ class GeminService
             ]
         ]);
 
-        return $response;
+      return $response->json();
     }
 
     public function Response(string $data)
     {
+        
         
         return $this->Request($data);
         

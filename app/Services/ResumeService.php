@@ -96,7 +96,7 @@ CV:
 
     protected function getCleanAiData(string $prompt)
     {
-        $response = $this->gemini->Response($prompt)->json();
+        $response = $this->gemini->Response($prompt);
 
         $text = $response["candidates"][0]["content"]["parts"][0]["text"] ?? '{}';
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\JobVacancyController;
 use App\Http\Controllers\Api\ResumeController;
 use App\Http\Controllers\S3TestController;
@@ -85,6 +86,28 @@ Route::middleware(["auth:api"])->controller(ResumeController::class)->group(func
    Route::delete("resumes/{resume}", [ResumeController::class, "delete"]); //done
 
    Route::get("resumes/archived", [ResumeController::class, "getArchived"]); //done
+
+});
+
+
+
+
+
+Route::middleware(["auth:api"])->controller(JobApplicationController::class)->group(function () {
+
+
+   Route::get("applications", [JobApplicationController::class, "index"]); //done
+   Route::get("applications/archived", [JobApplicationController::class, "getArchived"]); //done
+   Route::get("applications/{jobapplication}", [JobApplicationController::class, "show"]); //done
+   Route::post("applications", [JobApplicationController::class, "store"]); //done
+
+   Route::put("applications/{jobapplication}/archive", [JobApplicationController::class, "archive"]); //done
+
+   Route::put("applications/{jobapplication}/restore", [JobApplicationController::class, "restore"]); //done
+
+   Route::delete("applications/{jobapplication}", [JobApplicationController::class, "delete"]); //done
+
+
 
 });
 

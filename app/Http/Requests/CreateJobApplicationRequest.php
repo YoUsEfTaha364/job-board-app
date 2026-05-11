@@ -7,6 +7,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Services\ApiResponseService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Override;
 
 class CreateJobApplicationRequest extends FormRequest
 {
@@ -35,8 +38,13 @@ class CreateJobApplicationRequest extends FormRequest
             'ai_generated_score' => 'nullable|numeric|min:0|max:100',
             'ai_generated_feedback' => 'nullable|string',
             'job_vacancy_id' => 'required|exists:job_vacancies,id',
-            'resume_id' => 'required|exists:resumes,id',
+            'resume_id' => ['required',Rule::exists('resumes', 'id')
+        ->where(function ($query) {
+            $query->where('user_id',Auth::user()->id);
+        }),],
             
         ];
     }
+
+
 }
