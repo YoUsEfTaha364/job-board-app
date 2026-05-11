@@ -1,29 +1,31 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateCompanyJobRequest;
 use App\Http\Requests\CreateJobVacancyRequest;
+use App\Http\Requests\UpdateCompanyJobRequest;
 use App\Http\Requests\UpdateJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
 use App\Models\JobVacancy;
 use App\Services\ApiResponseService;
 use App\Services\JobVacancyService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class JobVacancyController extends Controller
 {
-    protected JobVacancyService $jobService;
 
-    public function __construct(JobVacancyService $jobService)
-    {
-        $this->jobService = $jobService;
-    }
 
     public function index()
     {
-        $jobs = $this->jobService->getAllJobs(10);
-        
+
+        $company = Auth::user()->company;
+        $jobs = JobVacancy::with(['company', 'jobCategory'])->where("company_id", $company->id)->paginate(10);
+
+
         if ($jobs->isEmpty()) {
             return ApiResponseService::Response(200, "no jobs found", []);
         }
@@ -45,7 +47,9 @@ class JobVacancyController extends Controller
 
     public function getArchivedJobs()
     {
-        $jobs = $this->jobService->getArchivedJobs(10);
+
+        $jobs = JobVacancy::onlyTrashed()->with(['company', 'jobCategory'])->where("company_id", Auth::user()->company->id)->paginate(10);
+
 
         if ($jobs->isEmpty()) {
             return ApiResponseService::Response(200, "no archived jobs found", []);
@@ -68,7 +72,9 @@ class JobVacancyController extends Controller
 
     public function show(JobVacancy $jobVacancy)
     {
-        $job = $this->jobService->getJob($jobVacancy);
+        Gate::authorize("show", $jobVacancy);
+
+        $job = $jobVacancy->load(['company', 'jobCategory']);
 
         $response = [
             "job" => new JobVacancyResource($job)
@@ -77,11 +83,20 @@ class JobVacancyController extends Controller
         return ApiResponseService::Response(200, "get job", $response);
     }
 
-    public function store(CreateJobVacancyRequest $request)
+    public function store(CreateCompanyJobRequest $request)
     {
         $validated = $request->validated();
-        
-        $job = $this->jobService->createJob($validated);
+
+        $job = JobVacancy::create([
+            'title' => $validated["title"],
+            'description' => $validated["description"],
+            'location' => $validated["location"],
+            'salary' => $validated["salary"],
+            'type' => $validated["type"],
+            'company_id' => Auth::user()->company->id,
+            'category_id' => $validated["category_id"],
+
+        ]);
 
         $response = [
             "job" => new JobVacancyResource($job)
@@ -90,14 +105,15 @@ class JobVacancyController extends Controller
         return ApiResponseService::Response(201, "job created successfully", $response);
     }
 
-    public function update(UpdateJobVacancyRequest $request, JobVacancy $jobVacancy)
+    public function update(UpdateCompanyJobRequest $request, JobVacancy $jobVacancy)
     {
+        Gate::authorize("show", $jobVacancy);
         $validated = $request->validated();
-        
-        $job = $this->jobService->updateJob($jobVacancy, $validated);
+
+        $jobVacancy->update($validated);
 
         $response = [
-            "job" => new JobVacancyResource($job)
+            "job" => new JobVacancyResource($jobVacancy)
         ];
 
         return ApiResponseService::Response(200, "job updated successfully", $response);
@@ -105,22 +121,27 @@ class JobVacancyController extends Controller
 
     public function destroy(JobVacancy $jobVacancy)
     {
-        $this->jobService->permanentDelete($jobVacancy);
+        Gate::authorize("show", $jobVacancy);
+
+        $jobVacancy->forceDelete();
 
         return ApiResponseService::Response(200, "job deleted successfully", []);
     }
 
     public function archive(JobVacancy $jobVacancy)
     {
-        $this->jobService->archiveJob($jobVacancy);
+        Gate::authorize("show", $jobVacancy);
+        $jobVacancy->delete();
 
         return ApiResponseService::Response(200, "job archived successfully", []);
     }
 
-    public function restore($id)
+    public function restore(JobVacancy $jobVacancy)
     {
-        $jobVacancy = JobVacancy::onlyTrashed()->findOrFail($id);
-        $this->jobService->restoreJob($jobVacancy);
+
+        Gate::authorize("restore", $jobVacancy);
+        $jobVacancy->restore();
+
 
         $response = [
             "job" => new JobVacancyResource($jobVacancy)

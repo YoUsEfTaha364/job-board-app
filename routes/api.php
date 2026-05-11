@@ -1,10 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\CompanyController;
 use App\Http\Controllers\Api\JobApplicationController;
-use App\Http\Controllers\Api\JobVacancyController;
+use App\Http\Controllers\Api\Admin\JobVacancyController;
+use App\Http\Controllers\Api\Company\JobVacancyController as CompanyJobVacancyController;
 use App\Http\Controllers\Api\ResumeController;
 use App\Http\Controllers\S3TestController;
 use Illuminate\Http\Request;
@@ -25,7 +26,9 @@ Route::controller(AuthController::class)->group(function () {
    Route::middleware("auth:api")->delete("logout", "logout");
 });
 
-Route::middleware(["auth:api", "admin"])->controller(CategoryController::class)->group(function () {
+// admin
+
+Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(CategoryController::class)->group(function () {
 
    // get all categories without archived
    Route::get("categories", "index");
@@ -42,7 +45,7 @@ Route::middleware(["auth:api", "admin"])->controller(CategoryController::class)-
 
    Route::delete("categories/{jobcategory}", "archive");
 });
-Route::middleware(["auth:api", "admin"])->controller(CompanyController::class)->group(function () {
+Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(CompanyController::class)->group(function () {
 
    // get all companies without archived
    Route::get("companies", "index");
@@ -58,7 +61,7 @@ Route::middleware(["auth:api", "admin"])->controller(CompanyController::class)->
    Route::put("companies/{company}/restore", "restore")->withTrashed();
 });
 
-Route::middleware(["auth:api", "admin"])->controller(JobVacancyController::class)->group(function () {
+Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(JobVacancyController::class)->group(function () {
 
    Route::get("job-vacancies", "index"); //done
    Route::get("job-vacancies/archived", "getArchivedJobs"); //done
@@ -70,6 +73,19 @@ Route::middleware(["auth:api", "admin"])->controller(JobVacancyController::class
    Route::put("job-vacancies/{jobVacancy}/restore", "restore")->withTrashed(); //done
 
 });
+Route::prefix("company/")->middleware(["auth:api", "company"])->controller(CompanyJobVacancyController::class)->group(function () {
+
+   Route::get("job-vacancies", "index"); //done
+   Route::get("job-vacancies/archived", "getArchivedJobs"); 
+   Route::get("job-vacancies/{jobVacancy}", "show"); //done
+   Route::post("job-vacancies", "store"); //done
+   Route::put("job-vacancies/{jobVacancy}", "update"); //done
+   Route::delete("job-vacancies/{jobVacancy}", "destroy");
+   Route::put("job-vacancies/{jobVacancy}/archive", "archive"); //done
+   Route::put("job-vacancies/{jobVacancy}/restore", "restore")->withTrashed(); //done
+
+});
+
 Route::middleware(["auth:api"])->controller(ResumeController::class)->group(function () {
 
 
