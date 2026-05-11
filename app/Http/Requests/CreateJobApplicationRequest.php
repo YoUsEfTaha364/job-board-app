@@ -36,7 +36,7 @@ class CreateJobApplicationRequest extends FormRequest
             'ai_generated_feedback' => 'nullable|string',
             'job_vacancy_id' => 'required|exists:job_vacancies,id',
             'resume_id' => 'required|exists:resumes,id',
-            'user_id' => 'required|exists:users,id',
+            
         ];
     }
 }
