@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CompanyController;
+use App\Http\Controllers\Api\Admin\JobApplicationController as AdminJobApplicationController;
 use App\Http\Controllers\Api\JobApplicationController;
 use App\Http\Controllers\Api\Admin\JobVacancyController;
+use App\Http\Controllers\Api\Company\JobApplicationController as CompanyJobApplicationController;
 use App\Http\Controllers\Api\Company\JobVacancyController as CompanyJobVacancyController;
 use App\Http\Controllers\Api\ResumeController;
 use App\Http\Controllers\S3TestController;
@@ -73,10 +75,18 @@ Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(JobVacanc
    Route::put("job-vacancies/{jobVacancy}/restore", "restore")->withTrashed(); //done
 
 });
+
+Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(AdminJobApplicationController::class)->group(function () {
+   Route::get("applications", [AdminJobApplicationController::class, "index"]); //done
+   Route::get("applications/{jobapplication}", [AdminJobApplicationController::class, "show"]); //done
+
+});
+
+//company
 Route::prefix("company/")->middleware(["auth:api", "company"])->controller(CompanyJobVacancyController::class)->group(function () {
 
    Route::get("job-vacancies", "index"); //done
-   Route::get("job-vacancies/archived", "getArchivedJobs"); 
+   Route::get("job-vacancies/archived", "getArchivedJobs");
    Route::get("job-vacancies/{jobVacancy}", "show"); //done
    Route::post("job-vacancies", "store"); //done
    Route::put("job-vacancies/{jobVacancy}", "update"); //done
@@ -86,8 +96,14 @@ Route::prefix("company/")->middleware(["auth:api", "company"])->controller(Compa
 
 });
 
-Route::middleware(["auth:api"])->controller(ResumeController::class)->group(function () {
+Route::prefix("company/")->middleware(["auth:api", "company"])->controller(CompanyJobApplicationController::class)->group(function () {
 
+   Route::get("applications", [CompanyJobApplicationController::class, "index"]); //done
+   Route::get("applications/{jobapplication}", [CompanyJobApplicationController::class, "show"]); //done
+
+});
+
+Route::middleware(["auth:api"])->controller(ResumeController::class)->group(function () {
 
    Route::get("resumes", [ResumeController::class, "index"]); //done
    Route::get("resumes/archived", [ResumeController::class, "getArchived"]); //done
@@ -126,12 +142,3 @@ Route::middleware(["auth:api"])->controller(JobApplicationController::class)->gr
 
 
 });
-
-
-
-
-
-
-
-
-

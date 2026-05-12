@@ -21,14 +21,18 @@ class JobApplicationService
     {
         $prompt = $this->prompt($data);
 
-        $response = $this->gemini->Response($prompt);
         
+
+        $response=$this->gemini->Response($prompt);
+
         $text = $response["candidates"][0]["content"]["parts"][0]["text"] ?? '{}';
         
         // Sometimes the AI wraps it in markdown despite our prompt, so we strip it.
         $text = str_replace(['```json', '```'], '', $text);
         
         $aiData = json_decode(trim($text), true) ?? [];
+
+        
 
         // Save the job application with the AI score and feedback
         $jobApplication = JobApplication::create([

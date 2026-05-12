@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\Company;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateCompanyJobRequest;
 use App\Http\Requests\CreateJobVacancyRequest;
+use App\Http\Requests\FilterJobVacancyRequest;
 use App\Http\Requests\UpdateCompanyJobRequest;
 use App\Http\Requests\UpdateJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
 use App\Models\JobVacancy;
 use App\Services\ApiResponseService;
+use App\Services\FilterJobVacanciesService;
 use App\Services\JobVacancyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,14 +19,20 @@ use Illuminate\Support\Facades\Gate;
 
 class JobVacancyController extends Controller
 {
+    protected FilterJobVacanciesService $filterService;
 
-
-    public function index()
+    public function __construct(FilterJobVacanciesService $ser)
     {
+        $this->filterService=$ser;
+    }
 
-        $company = Auth::user()->company;
-        $jobs = JobVacancy::with(['company', 'jobCategory'])->where("company_id", $company->id)->paginate(10);
 
+    public function index(FilterJobVacancyRequest $request)
+    {
+        
+        $validated = $request->validated();
+
+        $jobs = $this->filterService->filterCompanyVacancies($validated);
 
         if ($jobs->isEmpty()) {
             return ApiResponseService::Response(200, "no jobs found", []);
@@ -42,9 +50,12 @@ class JobVacancyController extends Controller
             ]
         ];
 
-        return ApiResponseService::Response(200, "get jobs", $response);
+        return ApiResponseService::Response(
+            200,
+            "get jobs",
+            $response
+        );
     }
-
     public function getArchivedJobs()
     {
 

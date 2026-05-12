@@ -4,26 +4,32 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateJobVacancyRequest;
+use App\Http\Requests\FilterJobVacancyRequest;
 use App\Http\Requests\UpdateJobVacancyRequest;
 use App\Http\Resources\JobVacancyResource;
 use App\Models\JobVacancy;
 use App\Services\ApiResponseService;
+use App\Services\FilterJobVacanciesService;
 use App\Services\JobVacancyService;
 use Illuminate\Http\Request;
 
 class JobVacancyController extends Controller
 {
     protected JobVacancyService $jobService;
+    protected FilterJobVacanciesService $filterService;
 
-    public function __construct(JobVacancyService $jobService)
+    public function __construct(JobVacancyService $jobService,FilterJobVacanciesService $ser)
     {
         $this->jobService = $jobService;
+        $this->filterService = $ser;
     }
 
-    public function index()
+    public function index(FilterJobVacancyRequest $request)
     {
-        $jobs = $this->jobService->getAllJobs(10);
-        
+        $validated = $request->validated();
+
+        $jobs = $this->filterService->filterAdminVacancies($validated);
+
         if ($jobs->isEmpty()) {
             return ApiResponseService::Response(200, "no jobs found", []);
         }
@@ -40,7 +46,11 @@ class JobVacancyController extends Controller
             ]
         ];
 
-        return ApiResponseService::Response(200, "get jobs", $response);
+        return ApiResponseService::Response(
+            200,
+            "get jobs",
+            $response
+        );
     }
 
     public function getArchivedJobs()
@@ -80,7 +90,7 @@ class JobVacancyController extends Controller
     public function store(CreateJobVacancyRequest $request)
     {
         $validated = $request->validated();
-        
+
         $job = $this->jobService->createJob($validated);
 
         $response = [
@@ -93,7 +103,7 @@ class JobVacancyController extends Controller
     public function update(UpdateJobVacancyRequest $request, JobVacancy $jobVacancy)
     {
         $validated = $request->validated();
-        
+
         $job = $this->jobService->updateJob($jobVacancy, $validated);
 
         $response = [
