@@ -78,7 +78,15 @@ Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(JobVacanc
 
 Route::prefix("admin/")->middleware(["auth:api", "admin"])->controller(AdminJobApplicationController::class)->group(function () {
    Route::get("applications", [AdminJobApplicationController::class, "index"]); //done
+   Route::get("applications/archived", [AdminJobApplicationController::class, "getArchived"]); //done
    Route::get("applications/{jobapplication}", [AdminJobApplicationController::class, "show"]); //done
+
+   Route::put("applications/{jobapplication}/change-status", [AdminJobApplicationController::class, "changeStatus"]); //done
+
+   Route::put("applications/{jobapplication}/archive", [AdminJobApplicationController::class, "archive"]); //done
+
+   Route::put("applications/{jobapplication}/restore", [AdminJobApplicationController::class, "restore"])->withTrashed(); //done
+   Route::delete("applications/{jobapplication}", [AdminJobApplicationController::class, "delete"])->withTrashed(); //done
 
 });
 
@@ -99,7 +107,19 @@ Route::prefix("company/")->middleware(["auth:api", "company"])->controller(Compa
 Route::prefix("company/")->middleware(["auth:api", "company"])->controller(CompanyJobApplicationController::class)->group(function () {
 
    Route::get("applications", [CompanyJobApplicationController::class, "index"]); //done
+
+    Route::get("applications/archived", [CompanyJobApplicationController::class, "getArchived"]);
+
    Route::get("applications/{jobapplication}", [CompanyJobApplicationController::class, "show"]); //done
+
+   Route::put("applications/{jobapplication}/change-status", [CompanyJobApplicationController::class, "changeStatus"]); //done
+
+    Route::put("applications/{jobapplication}/archive", [CompanyJobApplicationController::class, "archive"]); //done
+
+   Route::put("applications/{jobapplication}/restore", [CompanyJobApplicationController::class, "restore"])->withTrashed(); //done
+
+
+   Route::delete("applications/{jobapplication}", [CompanyJobApplicationController::class, "delete"]); //done
 
 });
 
@@ -135,10 +155,8 @@ Route::middleware(["auth:api"])->controller(JobApplicationController::class)->gr
 
    Route::put("applications/{jobapplication}/archive", [JobApplicationController::class, "archive"]); //done
 
-   Route::put("applications/{jobapplication}/restore", [JobApplicationController::class, "restore"]); //done
+   Route::put("applications/{jobapplication}/restore", [JobApplicationController::class, "restore"])->withTrashed(); //done
 
-   Route::delete("applications/{jobapplication}", [JobApplicationController::class, "delete"]); //done
-
-
+  
 
 });

@@ -23,9 +23,10 @@ class JobVacancyPolicy
         
     }
     public function restore(User $user ,JobVacancy $jobvacancy){
+        
         $company=$user->company;
 
-       return  $company->jobVacancies()->withTrashed()->where("id",$jobvacancy->id)->exists();
+       return  $company->jobVacancies()->withTrashed()->where("id",$jobvacancy->id)->where()->exists() ;
 
         
     }

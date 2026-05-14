@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Auth;
 class FilterJobAppsService{
     public function filterAdminApps(array $validated)  {
         $query = JobApplication::query()
-            ->with('jobVacancy');
-
+            ->with('jobVacancy')->withTrashed()->where("admin_archived",false);
+        
         $query->when(
             isset($validated['status']),
             fn($q) => $q->where('status', $validated['status'])

@@ -12,77 +12,93 @@ use App\Services\ApiResponseService;
 use App\Services\JobApplicationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class JobApplicationController extends Controller
 {
 
     protected JobApplicationService $jobService;
-    public function __construct(JobApplicationService $job){
-        $this->jobService=$job;
-       
+    public function __construct(JobApplicationService $job)
+    {
+        $this->jobService = $job;
     }
 
 
-    public function index()  {
-        $applications=JobApplication::with("jobVacancy")->where("user_id",Auth::user()->id)->get();
+    public function index()
+    {
+        $applications = JobApplication::with("jobVacancy")->where("user_id", Auth::user()->id)->paginate(10);
 
-         if ($applications->isEmpty()) {
+        if ($applications->isEmpty()) {
             return ApiResponseService::Response(200, "no applications found", []);
         }
 
-         $response = [
-            "applications" => JobApplicationResource::collection($applications)
+        $response = [
+            "applications" => JobApplicationResource::collection($applications),
+            "pagination" => [
+                "current_page" => $applications->currentPage(),
+                "last_page" => $applications->lastPage(),
+                "per_page" => $applications->perPage(),
+                "total" => $applications->total(),
+                "next_page_url" => $applications->nextPageUrl(),
+                "prev_page_url" => $applications->previousPageUrl()
+            ]
         ];
 
 
-
         return ApiResponseService::Response(
-            201, 
-            "get user job apps", 
-            $response   
+            201,
+            "get user job apps",
+            $response
         );
-
     }
-    
-    public function store(CreateJobApplicationRequest $request)  {
-        $validated=$request->validated();
-       
+
+    public function store(CreateJobApplicationRequest $request)
+    {
+        $validated = $request->validated();
+
         $application = $this->jobService->storeJob($validated);
-        
+
         return ApiResponseService::Response(
-            201, 
-            "Job application created and analyzed successfully", 
+            201,
+            "Job application created and analyzed successfully",
             new JobApplicationResource($application)
         );
     }
 
     public function show(JobApplication $jobapplication)
     {
+        Gate::authorize("seekerActions", $jobapplication);
         return ApiResponseService::Response(200, "Job application retrieved successfully", new JobApplicationResource($jobapplication));
     }
 
     public function archive(JobApplication $jobapplication)
     {
+        Gate::authorize("seekerActions", $jobapplication);
+        $jobapplication->update([
+            "user_archived" => true
+        ]);
         $jobapplication->delete();
         return ApiResponseService::Response(200, "Job application archived successfully", []);
     }
 
-    public function delete(JobApplication $jobapplication)
+    public function restore(JobApplication $jobapplication)
     {
-        $jobapplication->forceDelete();
-        return ApiResponseService::Response(200, "Job application deleted permanently", []);
-    }
+        Gate::authorize("seekerRestore", $jobapplication);
 
-    public function restore($id)
-    {
-        $jobApplication = JobApplication::withTrashed()->findOrFail($id);
-        $jobApplication->restore();
-        return ApiResponseService::Response(200, "Job application restored successfully", new JobApplicationResource($jobApplication));
+        if ($jobapplication->trashed()) {
+            $jobapplication->restore();
+        }
+
+        $jobapplication->update([
+            "user_archived" => false
+        ]);
+        $jobapplication->restore();
+        return ApiResponseService::Response(200, "Job application restored successfully", new JobApplicationResource($jobapplication));
     }
 
     public function getArchived()
     {
-        $applications = JobApplication::with("jobVacancy")->where("user_id", Auth::user()->id)->onlyTrashed()->get();
+        $applications = JobApplication::with("jobVacancy")->where("user_id", Auth::user()->id)->withTrashed()->where("user_archived", true)->get();
         return ApiResponseService::Response(200, "Archived job applications retrieved", JobApplicationResource::collection($applications));
     }
 }
