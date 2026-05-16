@@ -13,6 +13,7 @@ use App\Services\ApiResponseService;
 use App\Services\CompanyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class CompanyController extends Controller
 {
@@ -23,69 +24,77 @@ class CompanyController extends Controller
         $this->companyService = $companyService;
     }
 
-    public function index()
-    {
-       
-        $companies = $this->companyService->getAllCompanies(10);
-        
-        if ($companies->isEmpty()) {
-            return ApiResponseService::Response(200, "no companies found", []);
+  public function index()
+{
+    $page = request('page', 1);
+    $key = "companies.page_{$page}";
+
+    $companies = Cache::tags(['companies'])->remember($key, 3600, function () {
+        return $this->companyService->getAllCompanies(10);
+    });
+
+    if ($companies->isEmpty()) {
+        return ApiResponseService::Response(200, "no companies found", []);
+    }
+
+    return ApiResponseService::Response(200, "get companies", [
+        "companies" => CompanyResource::collection($companies),
+        "pagination" => [
+            "current_page" => $companies->currentPage(),
+            "last_page" => $companies->lastPage(),
+            "per_page" => $companies->perPage(),
+            "total" => $companies->total(),
+            "next_page_url" => $companies->nextPageUrl(),
+            "prev_page_url" => $companies->previousPageUrl()
+        ]
+    ]);
+}
+ public function getArchived()
+{
+    $key = "companies.archived.page_" . request('page', 1);
+
+    $companies = Cache::tags(['companies'])->remember($key, 3600, function () {
+        return $this->companyService->getArchivedCompanies(10);
+    });
+
+    if ($companies->isEmpty()) {
+        return ApiResponseService::Response(200, "no archived companies found", []);
+    }
+
+    return ApiResponseService::Response(200, "get archived companies", [
+        "companies" => CompanyResource::collection($companies),
+        "pagination" => [
+            "current_page" => $companies->currentPage(),
+            "last_page" => $companies->lastPage(),
+            "per_page" => $companies->perPage(),
+            "total" => $companies->total(),
+            "next_page_url" => $companies->nextPageUrl(),
+            "prev_page_url" => $companies->previousPageUrl()
+        ]
+    ]);
+}
+
+ public function show(Company $company)
+{
+    $company = Cache::tags(['companies'])->remember(
+        "company_{$company->id}",
+        3600,
+        function () use ($company) {
+            return $this->companyService->getCompany($company);
         }
+    );
 
-        $response = [
-            "companies" => CompanyResource::collection($companies),
-            "pagination" => [
-                "current_page" => $companies->currentPage(),
-                "last_page" => $companies->lastPage(),
-                "per_page" => $companies->perPage(),
-                "total" => $companies->total(),
-                "next_page_url" => $companies->nextPageUrl(),
-                "prev_page_url" => $companies->previousPageUrl()
-            ]
-        ];
-
-        return ApiResponseService::Response(200, "get companies", $response);
-    }
-
-    public function getArchived()
-    {
-        $companies = $this->companyService->getArchivedCompanies(10);
-
-        if ($companies->isEmpty()) {
-            return ApiResponseService::Response(200, "no archived companies found", []);
-        }
-
-        $response = [
-            "companies" => CompanyResource::collection($companies),
-            "pagination" => [
-                "current_page" => $companies->currentPage(),
-                "last_page" => $companies->lastPage(),
-                "per_page" => $companies->perPage(),
-                "total" => $companies->total(),
-                "next_page_url" => $companies->nextPageUrl(),
-                "prev_page_url" => $companies->previousPageUrl()
-            ]
-        ];
-
-        return ApiResponseService::Response(200, "get archived companies", $response);
-    }
-
-    public function show(Company $company)
-    {
-        $company = $this->companyService->getCompany($company);
-
-        $response = [
-            "company" => new CompanyResource($company)
-        ];
-
-        return ApiResponseService::Response(200, "get company", $response);
-    }
-
+    return ApiResponseService::Response(200, "get company", [
+        "company" => new CompanyResource($company)
+    ]);
+}
     public function store(CreateCompanyRequest $request)
     {
         $validated = $request->validated();
         
         $company = $this->companyService->createCompany($validated);
+
+        Cache::tags(['companies'])->flush();
 
         $response = [
             "company" => new CompanyResource($company)
@@ -100,6 +109,8 @@ class CompanyController extends Controller
         
         $company = $this->companyService->updateCompany($company, $validated);
 
+        Cache::tags(['companies'])->flush();
+
         $response = [
             "company" => new CompanyResource($company)
         ];
@@ -111,6 +122,8 @@ class CompanyController extends Controller
     {
         $this->companyService->archiveCompany($company);
 
+        Cache::tags(['companies'])->flush();
+
         return ApiResponseService::Response(200, "company archived successfully", []);
     }
 
@@ -118,6 +131,8 @@ class CompanyController extends Controller
     {
        
         $this->companyService->restoreCompany($company);
+
+        Cache::tags(['companies'])->flush();
 
         $response = [
             "company" => new CompanyResource($company)

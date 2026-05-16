@@ -10,6 +10,7 @@ use App\Models\JobApplication;
 use App\Services\ApiResponseService;
 use App\Services\FilterJobAppsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
 class JobApplicationController extends Controller
@@ -22,8 +23,20 @@ class JobApplicationController extends Controller
     }
     public function index(FilterJobApplicationRequest $request)
     {
+
+
         $validated = $request->validated();
-        $applications = $this->appService->filterAdminApps($validated);
+
+        //todo caching filters problems
+        $params = array_merge($validated, [
+            'page' => request('page', 1)
+        ]);
+        ksort($params);
+        $key = md5(json_encode($params));
+
+        $applications = Cache::tags(["applications"])->remember("admin.job_applications.$key", 3600, function () use ($validated) {
+            return $this->appService->filterAdminApps($validated);
+        });
 
         if ($applications->isEmpty()) {
             return ApiResponseService::Response(200, "no applications found", []);
@@ -79,9 +92,13 @@ class JobApplicationController extends Controller
 
     public function show(JobApplication $jobapplication)
     {
+      $application=  Cache::tags(["applications"])->remember("applications_".$jobapplication->id, 3600, function () use ($jobapplication) {
+            return JobApplication::with(['jobVacancy', 'user', 'resume'])
+                ->findOrFail($jobapplication->id);
+        });
 
         $response = [
-            "application" => new AdminJobApplicationResource($jobapplication->load(["jobVacancy", "user", "resume"]))
+            "application" => new AdminJobApplicationResource($application)
         ];
 
         return ApiResponseService::Response(200, "get a gjob", $response);
@@ -110,6 +127,10 @@ class JobApplicationController extends Controller
             "status" => $validated["status"]
         ]);
 
+        Cache::tags(["applications"])->flush();
+
+
+
         $response = [
             "application" => new AdminJobApplicationResource($jobapplication->load(["jobVacancy", "user", "resume"]))
         ];
@@ -128,6 +149,8 @@ class JobApplicationController extends Controller
 
         $jobapplication->delete();
 
+        Cache::tags(["applications"])->flush();
+
         return ApiResponseService::Response(200, "application archived successfully", []);
     }
     public function restore(JobApplication $jobapplication)
@@ -140,6 +163,8 @@ class JobApplicationController extends Controller
             $jobapplication->restore();
         }
 
+         Cache::tags(["applications"])->flush();
+
         $response = [
             "application" => new AdminJobApplicationResource($jobapplication->load(["jobVacancy", "user", "resume"]))
         ];
@@ -148,7 +173,9 @@ class JobApplicationController extends Controller
 
     public function delete(JobApplication $jobapplication)
     {
+         Cache::tags(["applications"])->flush();
         $jobapplication->forceDelete();
+
         return ApiResponseService::Response(200, "job app deleted permanently", []);
     }
 }

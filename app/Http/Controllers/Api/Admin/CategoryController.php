@@ -9,13 +9,17 @@ use App\Http\Resources\CategoryResource;
 use App\Models\JobCategory;
 use App\Services\ApiResponseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = JobCategory::all();
+        $categories =Cache::tags(["categories"])->remember("categories", 3600, function () {
+            return JobCategory::all();
+        });
 
+        
         if ($categories->count() <= 0) {
 
             return ApiResponseService::Response(200, "no categories found", []);
@@ -28,10 +32,11 @@ class CategoryController extends Controller
         return ApiResponseService::Response(200, "get categories", $response);
     }
 
-    public function getArchived() {
-        
+    public function getArchived()
+    {
 
-        $categories=JobCategory::onlyTrashed()->get();
+
+        $categories = JobCategory::onlyTrashed()->get();
 
         if ($categories->count() <= 0) {
 
@@ -43,8 +48,6 @@ class CategoryController extends Controller
         ];
 
         return ApiResponseService::Response(200, "get archivedCategories", $response);
-
-        
     }
 
     public function  store(CreateCategoryRequest $request)
@@ -56,6 +59,9 @@ class CategoryController extends Controller
         ]);
 
 
+        Cache::tags(["categories"])->flush();
+
+
         $response = [
             "category" => new CategoryResource($category)
         ];
@@ -63,12 +69,14 @@ class CategoryController extends Controller
 
         return ApiResponseService::Response(201, "category created successfully", $response);
     }
-    public function  update(UpdateCategoryRequest $request,JobCategory $jobcategory)
+    public function  update(UpdateCategoryRequest $request, JobCategory $jobcategory)
     {
         $validated = $request->validated();
         $jobcategory->update([
             "name" => $validated["name"]
         ]);
+
+        Cache::tags(["categories"])->flush();
 
         $response = [
             "category" => new CategoryResource($jobcategory)
@@ -77,31 +85,36 @@ class CategoryController extends Controller
         return ApiResponseService::Response(200, "category updated successfully", $response);
     }
 
-    public function show(JobCategory $jobcategory)  {
+    public function show(JobCategory $jobcategory)
+    {
 
         $response = [
             "category" => new CategoryResource($jobcategory)
         ];
 
         return ApiResponseService::Response(200, "get category", $response);
-        
     }
-    public function archive(JobCategory $jobcategory)  {
+    public function archive(JobCategory $jobcategory)
+    {
+        
+        $jobcategory->delete();
 
-        $jobcategory->delete(); 
+        Cache::tags(["categories"])->flush();
+
 
         return ApiResponseService::Response(200, "category archived", []);
-        
     }
-    public function restore(JobCategory $jobcategory)  {
-    
-        $jobcategory->restore(); 
+    public function restore(JobCategory $jobcategory)
+    {
 
-         $response = [
+        $jobcategory->restore();
+
+        Cache::tags(["categories"])->flush();
+
+        $response = [
             "category" => new CategoryResource($jobcategory)
         ];
 
         return ApiResponseService::Response(200, "category restored successfully", $response);
-        
     }
 }

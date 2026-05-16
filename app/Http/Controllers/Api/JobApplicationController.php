@@ -12,6 +12,7 @@ use App\Services\ApiResponseService;
 use App\Services\JobApplicationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class JobApplicationController extends Controller
@@ -26,7 +27,12 @@ class JobApplicationController extends Controller
 
     public function index()
     {
-        $applications = JobApplication::with("jobVacancy")->where("user_id", Auth::user()->id)->paginate(10);
+        $key = "seeker_applications." . Auth::user()->id . ".page_" . request('page', 1);
+
+        $applications =  Cache::tags(["applications"])->remember($key, 3600, function () {
+            return JobApplication::with("jobVacancy")->where("user_id", Auth::user()->id)->paginate(10);
+        });
+
 
         if ($applications->isEmpty()) {
             return ApiResponseService::Response(200, "no applications found", []);
@@ -58,6 +64,9 @@ class JobApplicationController extends Controller
 
         $application = $this->jobService->storeJob($validated);
 
+        Cache::tags(["applications"])->flush();
+
+
         return ApiResponseService::Response(
             201,
             "Job application created and analyzed successfully",
@@ -68,7 +77,13 @@ class JobApplicationController extends Controller
     public function show(JobApplication $jobapplication)
     {
         Gate::authorize("seekerActions", $jobapplication);
-        return ApiResponseService::Response(200, "Job application retrieved successfully", new JobApplicationResource($jobapplication));
+
+        $application =  Cache::tags(["applications"])->remember("applications_" . $jobapplication->id, 3600, function () use ($jobapplication) {
+            return JobApplication::with(['jobVacancy', 'user', 'resume'])
+                ->findOrFail($jobapplication->id);
+        });
+
+        return ApiResponseService::Response(200, "show job app", new JobApplicationResource($application));
     }
 
     public function archive(JobApplication $jobapplication)
@@ -77,6 +92,8 @@ class JobApplicationController extends Controller
         $jobapplication->update([
             "user_archived" => true
         ]);
+        Cache::tags(["applications"])->flush();
+
         $jobapplication->delete();
         return ApiResponseService::Response(200, "Job application archived successfully", []);
     }
@@ -88,6 +105,9 @@ class JobApplicationController extends Controller
         if ($jobapplication->trashed()) {
             $jobapplication->restore();
         }
+
+        Cache::tags(["applications"])->flush();
+
 
         $jobapplication->update([
             "user_archived" => false

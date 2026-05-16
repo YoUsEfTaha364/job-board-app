@@ -15,6 +15,7 @@ use App\Services\FilterJobVacanciesService;
 use App\Services\JobVacancyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class JobVacancyController extends Controller
@@ -23,16 +24,29 @@ class JobVacancyController extends Controller
 
     public function __construct(FilterJobVacanciesService $ser)
     {
-        $this->filterService=$ser;
+        $this->filterService = $ser;
     }
 
 
     public function index(FilterJobVacancyRequest $request)
     {
-        
+
         $validated = $request->validated();
 
-        $jobs = $this->filterService->filterCompanyVacancies($validated);
+
+        $params = array_merge($validated, [
+            "page" => request("page", 1),
+            'company_id' => auth::user()->company->id
+        ]);
+
+        ksort($params);
+
+        $key = "company_job_vacancies." . md5(json_encode($params));
+
+        $jobs = Cache::tags(["job_vacancies"])->remember($key, 3600, function () use ($validated) {
+            return $this->filterService->filterCompanyVacancies($validated);
+        });
+
 
         if ($jobs->isEmpty()) {
             return ApiResponseService::Response(200, "no jobs found", []);
@@ -85,7 +99,10 @@ class JobVacancyController extends Controller
     {
         Gate::authorize("show", $jobVacancy);
 
-        $job = $jobVacancy->load(['company', 'jobCategory']);
+        $job = Cache::tags(["job_vacancies"])->remember("job_vacancies.$jobVacancy->id", 3600, function () use ($jobVacancy) {
+            return  $jobVacancy->load(['company', 'jobCategory']);
+        });
+
 
         $response = [
             "job" => new JobVacancyResource($job)
@@ -109,6 +126,9 @@ class JobVacancyController extends Controller
 
         ]);
 
+        Cache::tags(["job_vacancies"])->flush();
+
+
         $response = [
             "job" => new JobVacancyResource($job)
         ];
@@ -123,6 +143,9 @@ class JobVacancyController extends Controller
 
         $jobVacancy->update($validated);
 
+        Cache::tags(["job_vacancies"])->flush();
+
+
         $response = [
             "job" => new JobVacancyResource($jobVacancy)
         ];
@@ -136,6 +159,9 @@ class JobVacancyController extends Controller
 
         $jobVacancy->forceDelete();
 
+        Cache::tags(["job_vacancies"])->flush();
+
+
         return ApiResponseService::Response(200, "job deleted successfully", []);
     }
 
@@ -143,6 +169,9 @@ class JobVacancyController extends Controller
     {
         Gate::authorize("show", $jobVacancy);
         $jobVacancy->delete();
+
+        Cache::tags(["job_vacancies"])->flush();
+
 
         return ApiResponseService::Response(200, "job archived successfully", []);
     }
@@ -153,6 +182,7 @@ class JobVacancyController extends Controller
         Gate::authorize("restore", $jobVacancy);
         $jobVacancy->restore();
 
+        Cache::tags(["job_vacancies"])->flush();
 
         $response = [
             "job" => new JobVacancyResource($jobVacancy)
